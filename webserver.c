@@ -5,7 +5,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 #include "webserver.h"
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include <sys/sendfile.h>
 int WORKERS;
 int PORT;
 //messages
@@ -22,46 +26,70 @@ char* giveContentType(char *arxeio){
 		word=split;
 		split=strtok(NULL,".");
 	}
-	printf("Type: %s\n" word);
-	if ((strcmp(word,"txt")==0)||(strcmp(word,"sed")==0)||(strcmp(word,"awk")==0)||(strcmp(word,'c')==0)||(strcmp(word,'h')==0)){
-		temp="text/plain";
-	}else{
+//||(strcmp(word,'c')==0)||(strcmp(word,'h')==0)
+	printf("Type: %s\n", word);
+	if ((strcmp(word,"txt")==0)||(strcmp(word,"sed")==0)||(strcmp(word,"awk")==0)){
+		strcpy(temp,"text/plain\0");
+		printf("First if");
+	}
+	printf("After first if");
 	if ((strcmp(word,"html")==0)||(strcmp(word,"htm")==0)){
-		temp="text/html";
-	}else{
-		if ((strcmp(word,"jpeg")==0)||(strcmp(word,"jpg")==0)){
-		temp= "image/jpeg";
-		}else{
-			if (strcmp(word,"gif")==0){
-			temp="image/gif";
-			}else{
-				if (strcmp(word,"pdf")==0){
-				temp="application/pdf";
-				}
-			}	
+		printf("Vrike ton tipo\n");
+		temp[0]='\0';
+		strcpy(temp,"text/html\0");
 
-		}
 	}
+	if ((strcmp(word,"jpeg")==0)||(strcmp(word,"jpg")==0)){
+		strcpy(temp,"image/jpeg\0");
 	}
+	if (strcmp(word,"gif")==0){
+		strcpy(temp, "image/gif\0");
+	}
+	if (strcmp(word,"pdf")==0){
+		strcpy(temp, "application/pdf\0");
+	}
+		
+
+
 	char* str=malloc(18);
 	strcpy(str, temp);
+	return str;
 }
-void getRequest(char* arxeio){
+void getRequest(char* arxeio, int new_socket){
+	 struct stat file_stat;
+	char* contents_chopped = arxeio + 1;
+	printf("irthe na parei to arxeio\n");
 	FILE *fp;
-	char *line = NULL;
-	fp = fopen(arxeio, "r");
-	if (fp==NULL){
-		write("%s\n", notFound);
+	long lSize;
+	char *buffer;
+	int fd;
+        int sent_bytes = 0;
+	printf("%s\n",contents_chopped);
+	
+
+	fp = fopen ( contents_chopped , "rb" );
+	if( !fp ){
+		printf("den vrike arxeio");
+		write(new_socket,notFound,23);
+		
 	}else{
-		size_t len = 0;
-		ssize_t read;
-		while ((read = getline(&line, &len, fp)) != -1) {
-		write(read);
-		}
-		write("Server: Marios and Evanthia Server\r\n");
-		fclose(output_file);
-		fp = fopen(arxeio, "r");
-		char nextChar = getc(fp);
+
+		
+	fseek( fp , 0L , SEEK_END);
+	lSize = ftell( fp );
+	rewind( fp );
+	// allocate memory for entire content
+	buffer = calloc( 1, lSize+1 );
+	if( !buffer ) fclose(fp),fputs("memory alloc fails",stderr),exit(1);
+
+	// copy the file into the buffer
+	if( 1!=fread( buffer , lSize, 1 , fp) )
+	  fclose(fp),free(buffer),fputs("entire read fails",stderr),exit(1);
+
+	fclose(fp);
+
+fp = fopen(contents_chopped, "r");
+	char nextChar = getc(fp);
 		int numCharacters = 0;
 
 		while (nextChar != EOF) {
@@ -69,14 +97,82 @@ void getRequest(char* arxeio){
 		    numCharacters++;
 		    nextChar = getc(fp);
 		}
-		write("Content Length:");
-		write(numCharacters);
-		write("\r\n");
-		write("Content Type:");
+		printf("length\n");
+
+		char len[11];		
+		sprintf(len,"%ld", numCharacters);
+	write(new_socket, ok ,16);
+	write(new_socket, "Server: Marios and Evanthia Server\r\n",36);
+	write(new_socket,"Content-Length:",15);
+	write(new_socket, len, strlen(len));
+	write(new_socket,"\r\n" ,2);
+	write(new_socket, "Connection: keep-alive\r\n",24);
+	//write(new_socket, "coment\r\n", 8);
+
 		char* tipos= giveContentType(arxeio);
-		write(tipos);
-		write("\r\n");
+		printf("Hello Pire Tipo\n");
+		printf("%s\n",tipos);
+		printf("%s\n",len);
+		write(new_socket, "Content-Type: " , 14);
+		write(new_socket, tipos, strlen(tipos));
+		write(new_socket,"\r\n" ,2);
+		write(new_socket,"\r\n" ,2);
+		printf("tipos ok\n");
+		printf("vrike arxeio");
+		printf("tipos ok\n");	
+		printf("tipos ok\n");
+		write(new_socket, buffer,lSize);
+		free(buffer);
+		fclose(fp);
+
+
+
+
+
+
+
+
+
 	}
+	/*printf("Prokeitai na steilw to arxeio");
+        fd = open(contents_chopped, O_RDONLY);
+
+	if (fd == -1)
+        {
+		printf("Den stelnei to arxeio");
+		write(new_socket,notFound,23);
+        }else{
+
+	if (fstat(fd, &file_stat) < 0)
+        {
+		printf("Lathos");
+		
+                exit(EXIT_FAILURE);
+        }
+  	int offset = 0;
+	int remain_data;
+        remain_data = file_stat.st_size;
+
+	printf("paw na steilw to arxeio\n");
+        while (((sent_bytes = sendfile(new_socket, fd, 0, remain_data)) > 0) && (remain_data > 0))
+        {
+                printf("stelnw sto sendfile\n");
+                remain_data -= sent_bytes;
+
+        }
+
+	}
+
+	close(fd);*/
+
+	
+		
+
+		
+ 		 
+		
+
+	
 }
 void readConfig() {
 	FILE *fp;
@@ -154,6 +250,7 @@ int main() {
 			}
 			split=strtok(NULL," ");
 		}
+		getRequest(requestFile, new_socket);
 		printf("%s\n", request);
 		if (strcmp(request,"GET")==0){
 			printf("The Request was GET\n");
@@ -164,8 +261,8 @@ int main() {
 		if (strcmp(request,"DELETE")==0){
 			printf("The Request was DELETE\n");
 		}
-		write(new_socket, "hello world\n", 12);
-		sleep(2);
+		//write(new_socket, "hello world\n", 12);
+		//sleep(2);
 		printf("%s\n","Tipwsa ti pira");
 		close(new_socket);
 	}
