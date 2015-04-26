@@ -12,6 +12,9 @@
 #include <sys/sendfile.h>
 int WORKERS;
 int PORT;
+//int create_socket, new_socket;
+socklen_t addrlen;
+struct sockaddr_in address;
 //messages
 char ok[16] = "HTTP/1.1 200 OK\r\n";
 char notFound[23] = "HTTP/1.1 404 NOT FOUND\r\n";
@@ -26,11 +29,14 @@ char* giveContentType(char *arxeio){
 		word=split;
 		split=strtok(NULL,".");
 	}
-//||(strcmp(word,'c')==0)||(strcmp(word,'h')==0)
 	printf("Type: %s\n", word);
 	if ((strcmp(word,"txt")==0)||(strcmp(word,"sed")==0)||(strcmp(word,"awk")==0)){
 		strcpy(temp,"text/plain\0");
 		printf("First if");
+	}
+	if ((word=='h') ||(word=='c')){
+		strcpy(temp,"text/plain\0");
+		printf(".h");
 	}
 	printf("After first if");
 	if ((strcmp(word,"html")==0)||(strcmp(word,"htm")==0)){
@@ -48,9 +54,6 @@ char* giveContentType(char *arxeio){
 	if (strcmp(word,"pdf")==0){
 		strcpy(temp, "application/pdf\0");
 	}
-		
-
-
 	char* str=malloc(18);
 	strcpy(str, temp);
 	return str;
@@ -71,6 +74,7 @@ void getRequest(char* arxeio, int new_socket){
 	if( !fp ){
 		printf("den vrike arxeio");
 		write(new_socket,notFound,23);
+		return;
 		
 	}else{
 
@@ -83,31 +87,20 @@ void getRequest(char* arxeio, int new_socket){
 	if( !buffer ) fclose(fp),fputs("memory alloc fails",stderr),exit(1);
 
 	// copy the file into the buffer
-	if( 1!=fread( buffer , lSize, 1 , fp) )
+	if( 1!=fread( buffer , lSize, 1, fp) )
 	  fclose(fp),free(buffer),fputs("entire read fails",stderr),exit(1);
 
 	fclose(fp);
 
-fp = fopen(contents_chopped, "r");
-	char nextChar = getc(fp);
-		int numCharacters = 0;
-
-		while (nextChar != EOF) {
-		    //Do something else, like collect statistics
-		    numCharacters++;
-		    nextChar = getc(fp);
-		}
-		printf("length\n");
-
-		char len[11];		
-		sprintf(len,"%ld", numCharacters);
+	char len[11];		
+	sprintf(len,"%ld", lSize);
 	write(new_socket, ok ,16);
 	write(new_socket, "Server: Marios and Evanthia Server\r\n",36);
 	write(new_socket,"Content-Length:",15);
 	write(new_socket, len, strlen(len));
 	write(new_socket,"\r\n" ,2);
-	write(new_socket, "Connection: keep-alive\r\n",24);
-	//write(new_socket, "coment\r\n", 8);
+	write(new_socket, "Connection: keep-alive\r\n",24); //to evala etsi proswrina :)
+
 
 		char* tipos= giveContentType(arxeio);
 		printf("Hello Pire Tipo\n");
@@ -118,60 +111,10 @@ fp = fopen(contents_chopped, "r");
 		write(new_socket,"\r\n" ,2);
 		write(new_socket,"\r\n" ,2);
 		printf("tipos ok\n");
-		printf("vrike arxeio");
-		printf("tipos ok\n");	
-		printf("tipos ok\n");
-		write(new_socket, buffer,lSize);
+		write(new_socket, buffer, lSize);
 		free(buffer);
-		fclose(fp);
-
-
-
-
-
-
-
-
-
 	}
-	/*printf("Prokeitai na steilw to arxeio");
-        fd = open(contents_chopped, O_RDONLY);
-
-	if (fd == -1)
-        {
-		printf("Den stelnei to arxeio");
-		write(new_socket,notFound,23);
-        }else{
-
-	if (fstat(fd, &file_stat) < 0)
-        {
-		printf("Lathos");
-		
-                exit(EXIT_FAILURE);
-        }
-  	int offset = 0;
-	int remain_data;
-        remain_data = file_stat.st_size;
-
-	printf("paw na steilw to arxeio\n");
-        while (((sent_bytes = sendfile(new_socket, fd, 0, remain_data)) > 0) && (remain_data > 0))
-        {
-                printf("stelnw sto sendfile\n");
-                remain_data -= sent_bytes;
-
-        }
-
-	}
-
-	close(fd);*/
-
-	
-		
-
-		
- 		 
-		
-
+	 
 	
 }
 void readConfig() {
@@ -204,10 +147,10 @@ void readConfig() {
 int main() {
 	readConfig();
 	int create_socket, new_socket;
-	socklen_t addrlen;
+	//socklen_t addrlen;
 	int bufsize = 1024;
 	char *buffer = malloc(bufsize);
-	struct sockaddr_in address;
+	//struct sockaddr_in address;
 	if ((create_socket = socket(AF_INET, SOCK_STREAM, 0)) > 0){
 		printf("The socket was created\n");
 	}
@@ -242,7 +185,7 @@ int main() {
 		split=strtok(request," ");
 		while(split != NULL){
 			word=split;
-			printf("%s\n", word);
+			//printf("%s\n", word);
 		if ((strcmp(split,"GET")==0)||(strcmp(split,"HEAD")==0)||(strcmp(split,"DELETE")==0)){
 			split=strtok(NULL," ");
 			requestFile=split;
@@ -261,8 +204,6 @@ int main() {
 		if (strcmp(request,"DELETE")==0){
 			printf("The Request was DELETE\n");
 		}
-		//write(new_socket, "hello world\n", 12);
-		//sleep(2);
 		printf("%s\n","Tipwsa ti pira");
 		close(new_socket);
 	}
