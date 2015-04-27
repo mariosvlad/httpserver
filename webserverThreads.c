@@ -28,6 +28,19 @@ char notFound[23] = "HTTP/1.1 404 NOT FOUND\r\n";
 char notImpl[29] = "HTTP/1.1 501 NOT IMPLEMENTED\r\n";
 pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t con=PTHREAD_COND_INITIALIZER;
+typedef struct node{
+    int current_socket;
+    struct  node *next;
+}NODE;
+
+typedef struct {
+    NODE *head; //pointer to the first item
+    NODE *tail; //pointer to the last item
+    int length;
+} QUEUE;
+QUEUE *queue = NULL;
+
+
 
 char* giveContentType(char *arxeio){
 	char temp[18];
@@ -161,21 +174,44 @@ void *takeThisRequest(int new_socket){
 	printf("%s\n","Tipwsa ti pira");
 	char request[1024];
 	strcpy(request, buffer);
+        
+    strcpy();
 	char* split;
 	char* word;
 	char* requestFile;
 	char* connectionType;
 	split=strtok(request," ");
+    char connection[10];
 	while(split != NULL){
 		word=split;
-		//printf("%s\n", word);
+		printf("%s\n", word);
 	if ((strcmp(split,"GET")==0)||(strcmp(split,"HEAD")==0)||(strcmp(split,"DELETE")==0)){
 		split=strtok(NULL," ");
 		requestFile=split;
 		printf("Requested File: %s\n", requestFile);
 	}
+    printf("Elegxei connection\n");
+    printf("%s ;sdafasdflja'sdfj  ", word);
+    if (strstr(word, "Connection:)==0){
+		split=strtok(NULL," ");
+		//connection=split;
+        strcpy(connecton, "keep-alive\n");
+		printf("Connection Type: %s\n", connection);
+        printf("\n\n HELLO CONNECTION HELLO \n\n");
+    }
+
+    if ((strcmp(split,"close"))==0){
+		//split=strtok(NULL," ");
+		//connection=split;
+        strcpy(connecton, "close");
+		printf("Connection Type: %s\n", connection);
+        printf("\n\n HELLO CONNECTION HELLO \n\n");
+    }
+    
 	split=strtok(NULL," ");
 	}
+
+
 	getRequest(requestFile, new_socket);
 	printf("%s\n", request);
 	if (strcmp(request,"GET")==0){
@@ -188,18 +224,24 @@ void *takeThisRequest(int new_socket){
 		printf("The Request was DELETE\n");
 	}
 	printf("%s\n","Tipwsa ti pira");
+    
+    if (strcmp(connection,"keep-alive")==0){
+        	takeThisRequest(new_socket);
+		printf("Connection Type: %s\n", connection);
+    }else{
+	    pthread_mutex_lock(&mtx);
+	    busy=busy-1;
+	    pthread_mutex_unlock(&mtx); 
+	    close(new_socket);
+        pthread_mutex_lock (&mut);
+	    pthread_cond_wait(&con, &mut);
+	    printf("Perimenei"); 
+	    pthread_mutex_lock(&mt);
+	    new_socket=dequeue(queue);
+	    pthread_mutex_unlock(&mt); 
+	    takeThisRequest(new_socket);
 
-	pthread_mutex_lock(&mtx);
-	busy=busy-1;
-	pthread_mutex_unlock(&mtx); 
-	close(new_socket);
-    	pthread_mutex_lock (&mut);
-	pthread_cond_wait(&con, &mut);
-	printf("Perimenei"); 
-	pthread_mutex_lock(&mt);
-	new_socket=new_socket2;
-	pthread_mutex_unlock(&mt); 
-	takeThisRequest(new_socket);
+    }
 	//handleThreads(); 
 	//close(new_socket);
 	//pthread_exit( 0 );
@@ -211,12 +253,56 @@ void *takeThisRequest(int new_socket){
 
 
 }*/
+int enqueue(int value, QUEUE *q){
+    NODE *p =  NULL;
+    p=(NODE*)malloc(sizeof(NODE));
+    if (p==NULL){
+        printf("System out of memory\n");
+        return 0;    
+    }
+    p->current_socket=value;
+    p->next=NULL;
+    if (q->length == 0)
+        q->head = q->tail = p;
+    else{
+        q->tail->next=p;
+        q->tail=p;
+    }
+    (q->length)++;
+    return 1;
+
+
+}
+
+int dequeue(QUEUE *q){
+    NODE *p= NULL;
+    if ((q==NULL)|| (q->head==NULL)){
+        printf("Sorry queue is empty\n");
+        return -1;
+    }
+    p=q->head;
+    
+    int epistrofi = q->head->current_socket;
+    q->head=q->head->next;
+    free(p);
+    --(q->length);
+    if (q->length==0){
+        q->tail=NULL;
+    }
+    
+    return epistrofi;
+}
+
+
 
 int main() {
 	readConfig();
 	int create_socket, new_socket;
 	//socklen_t addrlen;
-
+    //QUEUE *queue = NULL;
+    queue = (QUEUE *) malloc(sizeof(QUEUE));
+    queue->head = queue->tail = NULL;
+    queue->length=0;
 
 	//pthread_t newthread;
 
@@ -265,7 +351,9 @@ int main() {
 			//if (busy<WORKERS){
 				printf("Perimenei"); 
         			pthread_mutex_lock (&mut);
-				new_socket2=new_socket;
+                //prosthetei to socket stin oura
+                enqueue(new_socket,queue);
+				//new_socket2=new_socket;
 				busy=busy+1;
 				pthread_cond_signal(&con);
 				 
