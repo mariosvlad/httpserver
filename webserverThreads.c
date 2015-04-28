@@ -1,16 +1,5 @@
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string.h>
-#include "webserver.h"
-#include <fcntl.h>
-#include <arpa/inet.h>
-#include <sys/sendfile.h>
-#include <pthread.h>
+#include "webserverThreads.h"
+
 int WORKERS;
 int PORT;
 int bufsize = 1024;
@@ -22,12 +11,14 @@ struct sockaddr_in address;
 void *takeThisRequest(int);
 pthread_mutex_t  mtx;
 pthread_mutex_t  mt;
+
 //messages
 char ok[16] = "HTTP/1.1 200 OK\r\n";
 char notFound[23] = "HTTP/1.1 404 NOT FOUND\r\n";
 char notImpl[29] = "HTTP/1.1 501 NOT IMPLEMENTED\r\n";
 pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t con=PTHREAD_COND_INITIALIZER;
+
 typedef struct node{
     int current_socket;
     struct  node *next;
@@ -41,12 +32,11 @@ typedef struct {
 QUEUE *queue = NULL;
 
 
-
-char* giveContentType(char *arxeio){
+char *giveContentType(char *file) {
 	char temp[18];
 	char* split;
 	char* word;
-	split=strtok(arxeio,".");
+	split = strtok(file, ".");
 	while(split != NULL){
 		word=split;
 		split=strtok(NULL,".");
@@ -56,7 +46,7 @@ char* giveContentType(char *arxeio){
 		strcpy(temp,"text/plain\0");
 		printf("First if");
 	}
-	if ((word=='h') ||(word=='c')){
+	if ((strcmp(word, "h") == 0) || (strcmp(word, "c") == 0)) {
 		strcpy(temp,"text/plain\0");
 		printf(".h");
 	}
@@ -80,65 +70,105 @@ char* giveContentType(char *arxeio){
 	strcpy(str, temp);
 	return str;
 }
-void getRequest(char* arxeio, int new_socket){
+
+void getRequest(char *file, int new_socket) {
 	 struct stat file_stat;
-	char* contents_chopped = arxeio + 1;
-	printf("irthe na parei to arxeio\n");
+	char *contents_chopped = file + 1;
+	printf("irthe na parei to file\n");
 	FILE *fp;
 	long lSize;
 	char *buffer;
 	int fd;
         int sent_bytes = 0;
 	printf("%s\n",contents_chopped);
-	
 
 	fp = fopen ( contents_chopped , "rb" );
 	if( !fp ){
-		printf("den vrike arxeio");
-		write(new_socket,notFound,23);
+		printf("den vrike file");
+		if (write(new_socket, notFound, 23) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
 		return;
-		
-	}else{
 
-		
-	fseek( fp , 0L , SEEK_END);
-	lSize = ftell( fp );
-	rewind( fp );
-	// allocate memory for entire content
-	buffer = calloc( 1, lSize+1 );
-	if( !buffer ) fclose(fp),fputs("memory alloc fails",stderr),exit(1);
+	}
+	else {
 
-	// copy the file into the buffer
-	if( 1!=fread( buffer , lSize, 1, fp) )
-	  fclose(fp),free(buffer),fputs("entire read fails",stderr),exit(1);
+		fseek(fp, 0L, SEEK_END);
+		lSize = ftell(fp);
+		rewind(fp);
+		// allocate memory for entire content
+		buffer = calloc(1, lSize + 1);
+		if (!buffer) {
+			fclose(fp), fputs("memory alloc fails", stderr), exit(1);
+		}
 
-	fclose(fp);
+		// copy the file into the buffer
+		if (1 != fread(buffer, lSize, 1, fp)) {
+			fclose(fp), free(buffer), fputs("entire read fails", stderr), exit(1);
+		}
+		fclose(fp);
 
-	char len[11];		
-	sprintf(len,"%ld", lSize);
-	write(new_socket, ok ,16);
-	write(new_socket, "Server: Marios and Evanthia Server\r\n",36);
-	write(new_socket,"Content-Length:",15);
-	write(new_socket, len, strlen(len));
-	write(new_socket,"\r\n" ,2);
-	write(new_socket, "Connection: keep-alive\r\n",24); //to evala etsi proswrina :)
+		char len[11];
+		sprintf(len, "%ld", lSize);
+		if (write(new_socket, ok, 16) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
 
+		if (write(new_socket, "Server: Marios and Evanthia Server\r\n", 36) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
+		if (write(new_socket, "Content-Length:", 15) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
 
-		char* tipos= giveContentType(arxeio);
+		if (write(new_socket, len, strlen(len)) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
+
+		if (write(new_socket, "\r\n", 2) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
+
+		if (write(new_socket, "Connection: keep-alive\r\n", 24) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		}; //to evala etsi proswrina :)
+
+		char *tipos = giveContentType(file);
 		printf("Hello Pire Tipo\n");
 		printf("%s\n",tipos);
 		printf("%s\n",len);
-		write(new_socket, "Content-Type: " , 14);
-		write(new_socket, tipos, strlen(tipos));
-		write(new_socket,"\r\n" ,2);
-		write(new_socket,"\r\n" ,2);
+		if (write(new_socket, "Content-Type: ", 14) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
+		if (write(new_socket, tipos, strlen(tipos)) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
+		if (write(new_socket, "\r\n", 2) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
+		if (write(new_socket, "\r\n", 2) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
 		printf("tipos ok\n");
-		write(new_socket, buffer, lSize);
+		if (write(new_socket, buffer, lSize) < 0) {
+			printf("ERROR: couldn't write to socket\n");
+			exit(EXIT_FAILURE);
+		};
 		free(buffer);
 	}
-	 
-	
 }
+
 void readConfig() {
 	FILE *fp;
 	char *line = NULL;
@@ -182,35 +212,34 @@ void *takeThisRequest(int new_socket){
 	char* connectionType;
 	split=strtok(request," ");
     char connection[10];
-	while(split != NULL){
-		word=split;
+	while (split != NULL) {
+		word = split;
 		printf("%s\n", word);
-	if ((strcmp(split,"GET")==0)||(strcmp(split,"HEAD")==0)||(strcmp(split,"DELETE")==0)){
-		split=strtok(NULL," ");
-		requestFile=split;
-		printf("Requested File: %s\n", requestFile);
-	}
-    printf("Elegxei connection\n");
-    printf("%s ;sdafasdflja'sdfj  ", word);
-    if (strstr(word, "Connection:)==0){
-		split=strtok(NULL," ");
-		//connection=split;
-        strcpy(connecton, "keep-alive\n");
-		printf("Connection Type: %s\n", connection);
-        printf("\n\n HELLO CONNECTION HELLO \n\n");
-    }
+		if ((strcmp(split, "GET") == 0) || (strcmp(split, "HEAD") == 0) || (strcmp(split, "DELETE") == 0)) {
+			split = strtok(NULL, " ");
+			requestFile = split;
+			printf("Requested File: %s\n", requestFile);
+		}
+		printf("Elegxei connection\n");
+		printf("%s ;sdafasdflja'sdfj  ", word);
+		if (strstr(word, "Connection:") == 0) {
+			split = strtok(NULL, " ");
+			//connection=split;
+			strcpy(connecton, "keep-alive\n");
+			printf("Connection Type: %s\n", connection);
+			printf("\n\n HELLO CONNECTION HELLO \n\n");
+		}
 
-    if ((strcmp(split,"close"))==0){
-		//split=strtok(NULL," ");
-		//connection=split;
-        strcpy(connecton, "close");
-		printf("Connection Type: %s\n", connection);
-        printf("\n\n HELLO CONNECTION HELLO \n\n");
-    }
-    
-	split=strtok(NULL," ");
-	}
+		if ((strcmp(split, "close")) == 0) {
+			//split=strtok(NULL," ");
+			//connection=split;
+			strcpy(connecton, "close");
+			printf("Connection Type: %s\n", connection);
+			printf("\n\n HELLO CONNECTION HELLO \n\n");
+		}
 
+		split = strtok(NULL, " ");
+	}
 
 	getRequest(requestFile, new_socket);
 	printf("%s\n", request);
@@ -228,19 +257,23 @@ void *takeThisRequest(int new_socket){
     if (strcmp(connection,"keep-alive")==0){
         	takeThisRequest(new_socket);
 		printf("Connection Type: %s\n", connection);
-    }else{
+	}
+	else {
 	    pthread_mutex_lock(&mtx);
 	    busy=busy-1;
-	    pthread_mutex_unlock(&mtx); 
+		pthread_mutex_unlock(&mtx);
+
 	    close(new_socket);
+
         pthread_mutex_lock (&mut);
 	    pthread_cond_wait(&con, &mut);
-	    printf("Perimenei"); 
+		printf("Perimenei");
+
 	    pthread_mutex_lock(&mt);
 	    new_socket=dequeue(queue);
-	    pthread_mutex_unlock(&mt); 
-	    takeThisRequest(new_socket);
+		pthread_mutex_unlock(&mt);
 
+		takeThisRequest(new_socket);
     }
 	//handleThreads(); 
 	//close(new_socket);
@@ -258,20 +291,18 @@ int enqueue(int value, QUEUE *q){
     p=(NODE*)malloc(sizeof(NODE));
     if (p==NULL){
         printf("System out of memory\n");
-        return 0;    
+		return 0;
     }
     p->current_socket=value;
     p->next=NULL;
     if (q->length == 0)
         q->head = q->tail = p;
-    else{
+	else {
         q->tail->next=p;
         q->tail=p;
     }
     (q->length)++;
     return 1;
-
-
 }
 
 int dequeue(QUEUE *q){
@@ -281,19 +312,17 @@ int dequeue(QUEUE *q){
         return -1;
     }
     p=q->head;
-    
+
     int epistrofi = q->head->current_socket;
     q->head=q->head->next;
     free(p);
     --(q->length);
-    if (q->length==0){
+	if (q->length == 0) {
         q->tail=NULL;
     }
-    
+
     return epistrofi;
 }
-
-
 
 int main() {
 	readConfig();
@@ -307,13 +336,13 @@ int main() {
 	//pthread_t newthread;
 
 	//struct sockaddr_in address;
-	if ((create_socket = socket(AF_INET, SOCK_STREAM, 0)) > 0){
+	if ((create_socket = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
 		printf("The socket was created\n");
 	}
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(PORT);
-	while (bind(create_socket, (struct sockaddr *) &address, sizeof(address)) != 0){
+	while (bind(create_socket, (struct sockaddr *) &address, sizeof(address)) != 0) {
 		printf("try bind\n");
 	}
 	printf("Binding Socket\n");
@@ -325,48 +354,43 @@ int main() {
 			perror("server: listen");
 			exit(1);
 		}
-		if ((new_socket = accept(create_socket, (struct sockaddr *) &address, &addrlen)) < 0){
+		if ((new_socket = accept(create_socket, (struct sockaddr *) &address, &addrlen)) < 0) {
 			perror("server: accept");
 			exit(1);
 		}
-		if (new_socket > 0){
+		if (new_socket > 0) {
 			printf("The Client is connected...\n");
 		}
-		
-		
-		
-		if (busy>=WORKERS){
+
+		if (busy >= WORKERS) {
 			close(new_socket);
-
-		}else{
-
-
+		}
+		else {
 			if (times<=WORKERS){
-	 		if (pthread_create(&tid[times] , NULL, &takeThisRequest, new_socket) != 0)
-			   printf("pthread_create");
-			pthread_mutex_lock(&mtx);
-			busy=busy+1;
-			pthread_mutex_unlock(&mtx); 
-			}else{
+				if (pthread_create(&tid[times], NULL, &takeThisRequest, new_socket) != 0) {
+					printf("pthread_create");
+				}
+
+				pthread_mutex_lock(&mtx);
+				busy = busy + 1;
+				pthread_mutex_unlock(&mtx);
+			}
+			else {
 			//if (busy<WORKERS){
-				printf("Perimenei"); 
-        			pthread_mutex_lock (&mut);
+				printf("Perimenei");
+				pthread_mutex_lock(&mut);
                 //prosthetei to socket stin oura
                 enqueue(new_socket,queue);
 				//new_socket2=new_socket;
 				busy=busy+1;
 				pthread_cond_signal(&con);
-				 
 				pthread_mutex_unlock (&mut);
 			//}
-	 		
-
 			}
-			
-		times++;
+
+			times++;
 		}
 		//takeThisRequest(new_socket);
-
 	}
 	close(create_socket);
 	return 0;
