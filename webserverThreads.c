@@ -9,8 +9,8 @@ int new_socket2;
 socklen_t addrlen;
 struct sockaddr_in address;
 
-void *takeThisRequest(int);
-
+void *takeThisRequest(char*, int, int);
+void *handle();
 pthread_mutex_t mtx;
 pthread_mutex_t mt;
 
@@ -73,7 +73,7 @@ char *giveContentType(char *file) {
     return str;
 }
 
-void getRequest(char *file, int new_socket) {
+void getRequest(char *file, int new_socket, int typeCon) {
     struct stat file_stat;
     char *contents_chopped = file + 1;
     printf("irthe na parei to file\n");
@@ -136,12 +136,21 @@ void getRequest(char *file, int new_socket) {
             printf("ERROR: couldn't write to socket\n");
             exit(EXIT_FAILURE);
         };
+        char cnc[25];
 
-        if (write(new_socket, "Connection: keep-alive\r\n", 24) < 0) {
+       if (typeCon==1){
+            strcpy(cnc, "Connection: keep-alive\r\n" );
+
+       }else{
+            strcpy(cnc, "Connection: close\r\n" );
+        }
+
+        if (write(new_socket, cnc, strlen(cnc)) < 0) {
             printf("ERROR: couldn't write to socket\n");
             exit(EXIT_FAILURE);
-        }; //to evala etsi proswrina :)
-
+        };
+        //to evala etsi proswrina :)
+            
         char *tipos = giveContentType(file);
         printf("Hello Pire Tipo\n");
         printf("%s\n", tipos);
@@ -199,15 +208,13 @@ void readConfig() {
         free(line);
 }
 
-void *takeThisRequest(int new_socket) {
-    char *buffer = malloc(bufsize);
+void *takeThisRequest(char *buffer, int new_socket, int typeCon) {
+   /* char *buffer = malloc(bufsize);
     recv(new_socket, buffer, bufsize, 0);
     printf("%s\n", buffer);
-    printf("%s\n", "Tipwsa ti pira");
+    printf("%s\n", "Tipwsa ti pira");*/
     char request[1024];
     strcpy(request, buffer);
-
-    strcpy();
     char *split;
     char *word;
     char *requestFile;
@@ -222,28 +229,10 @@ void *takeThisRequest(int new_socket) {
             requestFile = split;
             printf("Requested File: %s\n", requestFile);
         }
-        printf("Elegxei connection\n");
-        printf("%s ;sdafasdflja'sdfj  ", word);
-        if (strstr(word, "Connection:") == 0) {
-            split = strtok(NULL, " ");
-            //connection=split;
-            strcpy(connecton, "keep-alive\n");
-            printf("Connection Type: %s\n", connection);
-            printf("\n\n HELLO CONNECTION HELLO \n\n");
-        }
-
-        if ((strcmp(split, "close")) == 0) {
-            //split=strtok(NULL," ");
-            //connection=split;
-            strcpy(connecton, "close");
-            printf("Connection Type: %s\n", connection);
-            printf("\n\n HELLO CONNECTION HELLO \n\n");
-        }
-
         split = strtok(NULL, " ");
     }
 
-    getRequest(requestFile, new_socket);
+    getRequest(requestFile, new_socket, typeCon);
     printf("%s\n", request);
     if (strcmp(request, "GET") == 0) {
         printf("The Request was GET\n");
@@ -255,8 +244,8 @@ void *takeThisRequest(int new_socket) {
         printf("The Request was DELETE\n");
     }
     printf("%s\n", "Tipwsa ti pira");
-
-    if (strcmp(connection, "keep-alive") == 0) {
+    return;
+    /*if (strcmp(connection, "keep-alive") == 0) {
         takeThisRequest(new_socket);
         printf("Connection Type: %s\n", connection);
     }
@@ -265,30 +254,155 @@ void *takeThisRequest(int new_socket) {
         busy = busy - 1;
         pthread_mutex_unlock(&mtx);
 
-        close(new_socket);
-
-        pthread_mutex_lock(&mut);
-        pthread_cond_wait(&con, &mut);
+     
         printf("Perimenei");
 
-        pthread_mutex_lock(&mt);
-        new_socket = dequeue(queue);
-        pthread_mutex_unlock(&mt);
-
+        
         takeThisRequest(new_socket);
-    }
-    //handleThreads();
-    //close(new_socket);
-    //pthread_exit( 0 );
+    }*/
+   /* pthread_mutex_lock(&mut);
+    pthread_cond_wait(&con, &mut);
+    handle();
+    pthread_mutex_lock(&mt);
+    new_socket = dequeue(queue);
+    pthread_mutex_unlock(&mt);
+    pthread_mutex_lock(&mut);
+    now_socket=dequeu(queue);
+    busy=busy-1;
+    pthread_mutex_unlock(&mut);
+
+    handleThreads();
+    close(new_socket);
+    pthread_exit( 0 );*/
 }
 
-/*void handleThreads(){
-	
+
+int handleThreads(int new_socket){
+    
+    char *buffer = malloc(bufsize);
+    recv(new_socket, buffer, bufsize, 0);
+    while(buffer==NULL){
+    recv(new_socket, buffer, bufsize, 0);
+    }
+    printf("%s\n", buffer);
+    printf("%s\n", "Tipwsa ti pira");
+    char request[1024];
+    int typeCon=-1;
+    char *split;
+    char *word;
+    char *requestFile;
+    strcpy(request, buffer);
+    //split = strtok(request, "\n");
+    char findCon[50];
+    char connectionType[11];
+    char *sub;
+    sub=strstr(request, "Connection:");
+    printf("sub is : %s\n", sub);
+   /* if (strstr(request, "Connection: keep-alive")==NULL){
+        printf("HELLOOO keep-alive\n");
+
+    }*/
+    char *sub2=strstr(sub, "keep-alive");
+    char *sub3=strstr(sub, "close");
+    printf("sub2= %s ssdg", sub2);
+
+    if (sub2!=NULL){
+        typeCon=1;
+        printf("keep-alive YEAH");
+    }
+    if (sub3!=NULL){
+        typeCon=0;
+        printf("keep-alive YEAH");
+    }
+    /*while (split != NULL) {
+        word = split;
+        printf("%s\n", word);
+        printf("prospathei na vrei to connection");
+        strcpy(findCon, word);
+        findCon[12]='\0';
+     if (strcmp(findCon, "Connection: keep-alive\n\n\n") == 0) {
+            printf("vrike to connection");
+            if (strstr(word, "keep-alive")){
+                strcpy(connectionType, "keep-alive");
+                printf("Connextion Type: %s\n", connectionType);
+                typeCon=1;
+            }else{
+                strcpy(connectionType, "close");
+                printf("%s\n", connectionType);
+                typeCon=0;
+            }
+     }
+      split = strtok(NULL, "\n");
+    }*/
+    takeThisRequest(buffer,new_socket, typeCon);
+    printf("meta tin take this request");
+    printf("type con: %d\n", typeCon);
+    if (typeCon==1){
+        return 1;
+    }else{
+            printf("kleinei i sindesi\n");
+            close(new_socket);
+            return 0;
+           
+    }
+    return 0;
+
+
+
+       /* while(strcmp(connectionType,"keep-alive")){
+            recv(new_socket, buffer, bufsize, 0);
+            char request[1024];
+            strcpy(request, buffer);
+            split = strtok(request, "\n");
+            char connectionType[11];
+            while (split != NULL) {
+                word = split;
+                printf("%s\n", word);
+             if (strstr(word, "Connection:") == 0) {
+                    if (strstr(word, "keep-alive")){
+                        strcpy(connectionType, "keep-alive");
+                    }else{
+                        strcpy(connectionType, "close");
+                        
+                    }
+             }
+            takeThisRequest
+
+        }
+
+
+            split = strtok(NULL, "\n");
+        }*/
+
+
+}
+
+void *handle(){
+    printf("irthe stin handle\n");
+    pthread_mutex_lock(&mut);
+    int now_socket=dequeue(queue);
+    //busy=busy-1;
+    printf("new socket %d\n", now_socket);
+    pthread_mutex_unlock(&mut);
+    int goOn= handleThreads(now_socket);
+    while (goOn==1){
+        printf("Conncection keep-alive, den exei eleftherwthei\n");
+        printf("now socket: %d\n" , now_socket);
+        goOn= handleThreads(now_socket);
+        printf("Go on is %d\n", goOn);
+    }   
+
+
+            pthread_mutex_lock(&mut);
+            busy=busy-1;
+            pthread_cond_wait(&con, &mut);
+            handle();
+    return;
+}
 
 
 
 
-}*/
 int enqueue(int value, QUEUE *q) {
     NODE *p = NULL;
     p = (NODE *) malloc(sizeof(NODE));
@@ -326,6 +440,8 @@ int dequeue(QUEUE *q) {
 
     return epistrofi;
 }
+
+
 
 int main() {
     readConfig();
@@ -370,17 +486,26 @@ int main() {
         }
         else {
             if (times <= WORKERS) {
-                if (pthread_create(&tid[times], NULL, &takeThisRequest, new_socket) != 0) {
+
+                /*pthread_mutex_lock(&mtx);
+                busy = busy + 1;
+                pthread_mutex_unlock(&mtx);*/
+                pthread_mutex_lock(&mut);
+                busy = busy + 1;
+                enqueue(new_socket, queue);
+                pthread_mutex_unlock(&mut);
+                if (pthread_create(&tid[times], NULL, &handle, NULL) != 0) {
                     printf("pthread_create");
                 }
 
-                pthread_mutex_lock(&mtx);
-                busy = busy + 1;
-                pthread_mutex_unlock(&mtx);
+
             }
             else {
                 //if (busy<WORKERS){
                 printf("Perimenei");
+
+
+                 //enqueue(new_socket, queue);
                 pthread_mutex_lock(&mut);
                 //prosthetei to socket stin oura
                 enqueue(new_socket, queue);
