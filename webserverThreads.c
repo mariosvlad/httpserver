@@ -44,18 +44,18 @@ char *giveContentType(char *file) {
         word = split;
         split = strtok(NULL, ".");
     }
-    printf("Type: %s\n", word);
+    //printf("Type: %s\n", word);
     if ((strcmp(word, "txt") == 0) || (strcmp(word, "sed") == 0) || (strcmp(word, "awk") == 0)) {
         strcpy(temp, "text/plain\0");
-        printf("First if");
+        //printf("First if");
     }
     if ((strcmp(word, "h") == 0) || (strcmp(word, "c") == 0)) {
         strcpy(temp, "text/plain\0");
-        printf(".h");
+        //printf(".h");
     }
-    printf("After first if");
+    //printf("After first if");
     if ((strcmp(word, "html") == 0) || (strcmp(word, "htm") == 0)) {
-        printf("Vrike ton tipo\n");
+        //printf("Vrike ton tipo\n");
         temp[0] = '\0';
         strcpy(temp, "text/html\0");
 
@@ -77,14 +77,15 @@ char *giveContentType(char *file) {
 void getRequest(char *file, int new_socket, int typeCon) {
     struct stat file_stat;
     char *contents_chopped = file + 1;
-    printf("irthe na parei to file\n");
+    //printf("irthe na parei to file\n");
     FILE *fp;
     long lSize;
     char *buffer;
     int fd;
     int sent_bytes = 0;
+#ifdef DEBUG
     printf("%s\n", contents_chopped);
-
+#endif
     fp = fopen(contents_chopped, "rb");
     if (!fp) {
         printf("den vrike file");
@@ -153,9 +154,11 @@ void getRequest(char *file, int new_socket, int typeCon) {
         //to evala etsi proswrina :)
             
         char *tipos = giveContentType(file);
+#ifdef DEBUG
         printf("Hello Pire Tipo\n");
         printf("%s\n", tipos);
         printf("%s\n", len);
+#endif
         if (write(new_socket, "Content-Type: ", 14) < 0) {
             printf("ERROR: couldn't write to socket\n");
             exit(EXIT_FAILURE);
@@ -172,7 +175,7 @@ void getRequest(char *file, int new_socket, int typeCon) {
             printf("ERROR: couldn't write to socket\n");
             exit(EXIT_FAILURE);
         };
-        printf("tipos ok\n");
+        //printf("tipos ok\n");
         if (write(new_socket, buffer, lSize) < 0) {
             printf("ERROR: couldn't write to socket\n");
             exit(EXIT_FAILURE);
@@ -234,7 +237,8 @@ void *takeThisRequest(char *buffer, int new_socket, int typeCon) {
     }
 
     getRequest(requestFile, new_socket, typeCon);
-    printf("%s\n", request);
+    //printf("%s\n", request);
+#ifdef DEBUG
     if (strcmp(request, "GET") == 0) {
         printf("The Request was GET\n");
     }
@@ -245,6 +249,7 @@ void *takeThisRequest(char *buffer, int new_socket, int typeCon) {
         printf("The Request was DELETE\n");
     }
     printf("%s\n", "Tipwsa ti pira");
+#endif
     return;
     /*if (strcmp(connection, "keep-alive") == 0) {
         takeThisRequest(new_socket);
@@ -285,8 +290,10 @@ int handleThreads(int new_socket) {
     while (buffer == NULL) {
         recv(new_socket, buffer, bufsize, 0);
     }
+#ifdef DEBUG
     printf("%s\n", buffer);
     printf("%s\n", "Tipwsa ti pira");
+#endif
     char request[1024];
     int typeCon = -1;
     char *split;
@@ -309,11 +316,11 @@ int handleThreads(int new_socket) {
 
     if (sub2 != NULL) {
         typeCon = 1;
-        printf("keep-alive YEAH");
+        //printf("keep-alive YEAH");
     }
     if (sub3 != NULL) {
         typeCon = 0;
-        printf("keep-alive YEAH");
+        //printf("keep-alive YEAH");
     }
     /*while (split != NULL) {
         word = split;
@@ -336,8 +343,10 @@ int handleThreads(int new_socket) {
       split = strtok(NULL, "\n");
     }*/
     takeThisRequest(buffer, new_socket, typeCon);
+#ifdef DEBUG
     printf("meta tin take this request");
     printf("type con: %d\n", typeCon);
+#endif
     if (typeCon == 1) {
         printf("Epistrefei keep-alive\n");
         return 1;
@@ -380,23 +389,23 @@ int handleThreads(int new_socket) {
 }
 
 void *handle() {
-    printf("irthe stin handle\n");
+    //printf("irthe stin handle\n");
     pthread_mutex_lock(&mut);
     int now_socket = dequeue(queue);
     pthread_mutex_unlock(&mut);
     //busy=busy-1;
-    printf("new socket %d\n", now_socket);
+    //printf("new socket %d\n", now_socket);
     int goOn = handleThreads(now_socket);
 
     //int goOn= handleThreads(now_socket);
     while (goOn == 1) {
-        printf("Conncection keep-alive, den exei eleftherwthei\n");
-        printf("now socket: %d\n", now_socket);
+        //printf("Conncection keep-alive, den exei eleftherwthei\n");
+        //printf("now socket: %d\n", now_socket);
         // pthread_mutex_lock(&mut);
         // pthread_mutex_unlock(&mut);
         goOn = handleThreads(now_socket);
 
-        printf("Go on is %d\n", goOn);
+        //printf("Go on is %d\n", goOn);
     }
 
 
@@ -475,7 +484,7 @@ int main() {
 
     int times = 0;
     while (1) {
-        if (listen(create_socket, 2) < 0) {
+        if (listen(create_socket, 3000) < 0) {
             perror("server: listen");
             exit(1);
         }
