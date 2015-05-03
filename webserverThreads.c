@@ -16,9 +16,9 @@ pthread_mutex_t mtx;
 pthread_mutex_t mt;
 
 //messages
-char ok[16] = "HTTP/1.1 200 OK\r\n";
-char notFound[23] = "HTTP/1.1 404 NOT FOUND\r\n";
-char notImpl[29] = "HTTP/1.1 501 NOT IMPLEMENTED\r\n";
+char ok[] = "HTTP/1.1 200 OK\r\n";
+char notFound[] = "HTTP/1.1 404 NOT FOUND\r\n";
+char notImpl[] = "HTTP/1.1 501 NOT IMPLEMENTED\r\n";
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t con = PTHREAD_COND_INITIALIZER;
 

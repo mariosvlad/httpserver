@@ -1,10 +1,10 @@
 all: webserver
 
-webserver: webserver.c
-	gcc -O3 -Wall webserver.c -o webserver.out
+webserver: webserverThreads.c
+	gcc -O3 -pthread -Wall webserverThreads.c -o webserver.out
 
 debug: webserver.c
-	gcc -DDEBUG -Wall webserver.c -o webserver.out
+	gcc -DDEBUG -pthread -Wall webserverThreads.c -o webserver.out
 
 clean:
 	rm webserver.out
