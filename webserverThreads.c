@@ -60,9 +60,10 @@ char *giveContentType(char *file) {
         strcpy(temp, "text/html\0");
 
     }
-    if ((strcmp(word, "jpeg") == 0) || (strcmp(word, "jpg") == 0)) {
+    if ((strcmp(word, "jpeg") == 0) || (strcmp(word, "jpg") == 0)||(strcmp(word, "png") == 0)) {
         strcpy(temp, "image/jpeg\0");
     }
+    
     if (strcmp(word, "gif") == 0) {
         strcpy(temp, "image/gif\0");
     }
@@ -139,6 +140,7 @@ void getRequest(char *file, int new_socket, int typeCon) {
             exit(EXIT_FAILURE);
         };
         char cnc[25];
+        printf("Epestrepse to arxeio: %s\n" ,contents_chopped );
 
         if (typeCon == 1) {
             strcpy(cnc, "Connection: keep-alive\r\n");
@@ -484,7 +486,7 @@ int main() {
 
     int times = 0;
     while (1) {
-        if (listen(create_socket, 3000) < 0) {
+        if (listen(create_socket, WORKERS) < 0) {
             perror("server: listen");
             exit(1);
         }
@@ -502,7 +504,7 @@ int main() {
         else {
             printf("apasxolimenoi: %d\n", busy);
             if (times <= WORKERS) {
-
+                printf("new socket: %d\n", new_socket);
                 /*pthread_mutex_lock(&mtx);
                 busy = busy + 1;
                 pthread_mutex_unlock(&mtx);*/
@@ -519,6 +521,7 @@ int main() {
             }
             else {
                 //if (busy<WORKERS){
+                printf("new socket: %d\n", new_socket);
                 printf("Perimenei");
                 //enqueue(new_socket, queue);
                 pthread_mutex_lock(&mut);
