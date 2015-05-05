@@ -90,11 +90,13 @@ void getRequest(char *file, int new_socket, int typeCon) {
     fp = fopen(contents_chopped, "rb");
     if (!fp) {
         printf("den vrike file");
-        if (write(new_socket, notFound, 23) < 0) {
+        /*if (write(new_socket, notFound, 23) < 0) {
             printf("ERROR: couldn't write to socket\n");
             exit(EXIT_FAILURE);
         };
-        return;
+        return;*/
+            notfound(new_socket, typeCon);
+            return;
 
     }
     else {
@@ -185,6 +187,400 @@ void getRequest(char *file, int new_socket, int typeCon) {
         free(buffer);
     }
 }
+void sendHead(char *file, int new_socket, int typeCon){
+   struct stat file_stat;
+    char *contents_chopped = file + 1;
+    //printf("irthe na parei to file\n");
+    FILE *fp;
+    long lSize;
+    char *buffer;
+    int fd;
+    int sent_bytes = 0;
+#ifdef DEBUG
+    printf("%s\n", contents_chopped);
+#endif
+    fp = fopen(contents_chopped, "rb");
+    if (!fp) {
+        printf("den vrike file");
+            notfound(new_socket, typeCon);
+            return;
+       /* if (write(new_socket, notFound, 23) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        return;*/
+
+    }
+    else {
+
+        fseek(fp, 0L, SEEK_END);
+        lSize = ftell(fp);
+        rewind(fp);
+        // allocate memory for entire content
+       /* buffer = calloc(1, lSize + 1);
+        if (!buffer) {
+            fclose(fp), fputs("memory alloc fails", stderr), exit(1);
+        }
+
+        // copy the file into the buffer
+        if (1 != fread(buffer, lSize, 1, fp)) {
+            fclose(fp), free(buffer), fputs("entire read fails", stderr), exit(1);
+        }*/
+        fclose(fp);
+
+        char len[11];
+        sprintf(len, "%ld", lSize);
+        char head[12] = "Head Send\r\n";
+        if (write(new_socket, ok, 17) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "Server: Marios and Evanthia Server\r\n", 36) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "Content-Length: ", 16) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //char *length;
+       // strcpy(length, strlen(head));
+        if (write(new_socket, "12", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        char cnc[25];
+        printf("Epestrepse to arxeio: %s\n" ,contents_chopped );
+
+        if (typeCon == 1) {
+            strcpy(cnc, "Connection: keep-alive\r\n");
+
+        } else {
+            strcpy(cnc, "Connection: close\r\n");
+        }
+
+        if (write(new_socket, cnc, strlen(cnc)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //to evala etsi proswrina :)
+            
+        //char *tipos = giveContentType(file);
+#ifdef DEBUG
+        printf("Hello Pire Tipo\n");
+        printf("%s\n", tipos);
+        printf("%s\n", len);
+#endif
+        if (write(new_socket, "Content-Type: text/plain", 24) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       /* if (write(new_socket, tipos, strlen(tipos)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };*/
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //printf("tipos ok\n");
+        if (write(new_socket, head, strlen(head)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //free(buffer);
+    }
+}
+
+void sendDelete(char *file, int new_socket, int typeCon){
+   struct stat file_stat;
+    char *contents_chopped = file + 1;
+    //printf("irthe na parei to file\n");
+    //FILE *fp;
+    //long lSize;
+    //char *buffer;
+    int ret;
+    int fd;
+    int sent_bytes = 0;
+#ifdef DEBUG
+    printf("%s\n", contents_chopped);
+#endif
+    //fp = fopen(contents_chopped, "rb");
+    /*if (!fp) {
+        printf("den vrike file");
+        if (write(new_socket, notFound, 23) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        return;
+
+    }
+    else {*/
+        ret = remove(file);
+        //fseek(fp, 0L, SEEK_END);
+        //lSize = ftell(fp);
+        //rewind(fp);
+        // allocate memory for entire content
+       /* buffer = calloc(1, lSize + 1);
+        if (!buffer) {
+            fclose(fp), fputs("memory alloc fails", stderr), exit(1);
+        }
+
+        // copy the file into the buffer
+        if (1 != fread(buffer, lSize, 1, fp)) {
+            fclose(fp), free(buffer), fputs("entire read fails", stderr), exit(1);
+        }*/
+        //fclose(fp);
+
+        //char len[11];
+        //sprintf(len, "%ld", lSize);
+        if (ret!=0){
+            printf("Den vrethike arxeio. \n");
+            notfound(new_socket, typeCon);
+            return;
+        }
+        else{
+        char head[13] = "Delete OK\r\n";
+        if (write(new_socket, ok, 16) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "Server: Marios and Evanthia Server\r\n", 36) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "Content-Length: ", 16) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "11", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        char cnc[25];
+        printf("Epestrepse to arxeio: %s\n" ,contents_chopped );
+
+        if (typeCon == 1) {
+            strcpy(cnc, "Connection: keep-alive\r\n");
+
+        } else {
+            strcpy(cnc, "Connection: close\r\n");
+        }
+
+        if (write(new_socket, cnc, strlen(cnc)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //to evala etsi proswrina :)
+            
+        //char *tipos = giveContentType(file);
+#ifdef DEBUG
+        printf("Hello Pire Tipo\n");
+        printf("%s\n", tipos);
+        printf("%s\n", len);
+#endif
+        if (write(new_socket, "Content-Type: text/plain", 24) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       /* if (write(new_socket, tipos, strlen(tipos)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };*/
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //printf("tipos ok\n");
+        if (write(new_socket, head, strlen(head)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       // free(buffer);
+  //  }
+
+      }
+}
+
+void sendNotImpl(int new_socket, int typeCon){
+
+    int ret;
+    int fd;
+    int sent_bytes = 0;
+#ifdef DEBUG
+    printf("%s\n", contents_chopped);
+#endif
+
+            printf("Den vrethike arxeio. \n");
+        char notim[26]="Method not implemented.\r\n";
+
+        if (write(new_socket, notImpl, 31) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "Server: Marios and Evanthia Server\r\n", 36) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "Content-Length: ", 16) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "25",2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        char cnc[25];
+        //printf("Epestrepse to arxeio: %s\n" ,contents_chopped );
+
+        if (typeCon == 1) {
+            strcpy(cnc, "Connection: keep-alive\r\n");
+
+        } else {
+            strcpy(cnc, "Connection: close\r\n");
+        }
+
+        if (write(new_socket, cnc, strlen(cnc)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //to evala etsi proswrina :)
+            
+        //char *tipos = giveContentType(file);
+#ifdef DEBUG
+        printf("Hello Pire Tipo\n");
+        printf("%s\n", tipos);
+        printf("%s\n", len);
+#endif
+        if (write(new_socket, "Content-Type: text/plain", 24) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       /* if (write(new_socket, tipos, strlen(tipos)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };*/
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //printf("tipos ok\n");
+        if (write(new_socket, notim, strlen(notim)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       // free(buffer);
+  //  }
+}
+
+void notfound(int new_socket, int typeCon){
+
+
+            printf("Den vrethike arxeio. \n");
+        char notim[23]="Document not Found.\r\n";
+
+        if (write(new_socket, notFound, 31) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "Server: Marios and Evanthia Server\r\n", 36) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "Content-Length: ", 16) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "22", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        char cnc[25];
+      //  printf("Epestrepse to arxeio: %s\n" ,contents_chopped );
+
+        if (typeCon == 1) {
+            strcpy(cnc, "Connection: keep-alive\r\n");
+
+        } else {
+            strcpy(cnc, "Connection: close\r\n");
+        }
+
+        if (write(new_socket, cnc, strlen(cnc)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //to evala etsi proswrina :)
+            
+        //char *tipos = giveContentType(file);
+#ifdef DEBUG
+        printf("Hello Pire Tipo\n");
+        printf("%s\n", tipos);
+        printf("%s\n", len);
+#endif
+        if (write(new_socket, "Content-Type: text/plain", 24) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       /* if (write(new_socket, tipos, strlen(tipos)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };*/
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        if (write(new_socket, "\r\n", 2) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+        //printf("tipos ok\n");
+        if (write(new_socket, notim, strlen(notim)) < 0) {
+            printf("ERROR: couldn't write to socket\n");
+            exit(EXIT_FAILURE);
+        };
+       // free(buffer);
+  //  }
+}
+
 
 void readConfig() {
     FILE *fp;
@@ -227,18 +623,35 @@ void *takeThisRequest(char *buffer, int new_socket, int typeCon) {
     char *connectionType;
     split = strtok(request, " ");
     char connection[10];
+    int flag=0;
     while (split != NULL) {
         word = split;
         //printf("%s\n", word);
         if ((strcmp(split, "GET") == 0) || (strcmp(split, "HEAD") == 0) || (strcmp(split, "DELETE") == 0)) {
             split = strtok(NULL, " ");
+            flag=1;
             requestFile = split;
             printf("Requested File: %s\n", requestFile);
+            if (strcmp(word, "GET") == 0){
+                   getRequest(requestFile, new_socket, typeCon);     
+            }else{
+                if (strcmp(word, "HEAD") == 0){
+                   printf("paei head\n");
+                   sendHead(requestFile, new_socket, typeCon);     
+                 }else{
+                    if (strcmp(word, "DELETE") == 0){
+                   sendDelete(requestFile, new_socket, typeCon);     
+                 }
+                }
+            }
         }
         split = strtok(NULL, " ");
     }
+    if (flag==0){
+        sendNotImpl(new_socket, typeCon);
+    }
 
-    getRequest(requestFile, new_socket, typeCon);
+
     //printf("%s\n", request);
 #ifdef DEBUG
     if (strcmp(request, "GET") == 0) {
