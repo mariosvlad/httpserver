@@ -1,0 +1,31 @@
+#ifndef QUEUE_H
+#define QUEUE_H
+
+#include "webserverThreads.h"
+extern int WORKERS;
+extern int PORT;
+extern int bufsize;
+extern int busy;
+extern int new_socket2;
+//int create_socket, new_socket;
+//socklen_t addrlen;
+//struct sockaddr_in address;
+
+
+extern pthread_mutex_t mtx;
+extern pthread_mutex_t mt;
+
+//messages
+extern char ok[];
+extern char notFound[];
+extern char notImpl[] ;
+extern pthread_mutex_t mut;
+extern pthread_cond_t con;
+
+
+
+extern QUEUE *queue ;
+int enqueue(int value, QUEUE *q);
+int dequeue(QUEUE *q);
+
+#endif
