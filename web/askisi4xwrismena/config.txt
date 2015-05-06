@@ -1,0 +1,6 @@
+#comment....
+
+THREADS= 40
+
+#another comment
+PORT= 30000
